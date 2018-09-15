@@ -14,7 +14,9 @@ SECTION header vstart=0
 
     header_end:
 SECTION main_code align=16 vstart=0
-    
+    ;需要设置堆栈段
+    ;设置数据段
+    mov 
 SECTION help_code align=16 vstart=0
 
 SECTION main_data align=16 vstart=0

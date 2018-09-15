@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+#dir
+windows/
+
+#
+*.bin
+*.img
+

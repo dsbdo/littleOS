@@ -29,13 +29,14 @@ SECTION main align=16 vstart=0x7c00
         ;read and determine that the program size
         mov ax, [app_physical_addr]
         mov dx, [app_physical_addr + 2]
-        mov bx,16
-        div bx
+        ; mov bx,16
+        ; div bx
 
-        mov dx, [ax + 2]
-        mov ax, [ax]
+        ; ;
+        ; mov dx, [ax + 2]
+        ; mov ax, [ax]
 
-        mov bx 512
+        mov bx, 512
         div bx
         ;determine that if the dx:ax is been divide ok
         cmp dx, 0
@@ -79,6 +80,7 @@ SECTION main align=16 vstart=0x7c00
         add bx,4
         loop realloc
         ;这里按理还是需要修改代码段地址
+        ;I think this must to set the code segment 
         jmp far [0x04]
         ;load the user program and jmp to the user program
         ;para is two ax is segment address, bx is the program block address
