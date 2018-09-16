@@ -3,28 +3,220 @@ SECTION header vstart=0
     program_length: dd program_end
     code_entry:     dw start ;偏移地址
                     ;段基址
-                    dd section.code_1.start
+                    dd section.main_code.start
     realloc_item:   dw (header_end - main_code_seg) / 4
     
     ;程序重定位表
+    ;nothing
     main_code_seg: dd section.main_code.start
     help_code_seg: dd section.help_code.start
     main_data_seg: dd section.main_data.start
     help_data_seg: dd section.help_data.start
-
+    stack_seg:     dd section.stack.start
     header_end:
 SECTION main_code align=16 vstart=0
     ;需要设置堆栈段
     ;设置数据段
-    mov 
+    ;user program is to realize print info
+    ;if the screen is full, this can scroll the screen info
+ start:
+    mov cs, [main_code_seg]
+    mov ds, [main_data_seg]
+    mov ss, [stack_seg]
+    ;have problem?
+    mov sp, ss
+    ;print string that store in main_data
+    mov ax, message_end - message
+    mov bx, message
+    mov cx,ax
+  put_string:
+    mov ax,cx 
+    add bx,ax
+
+    call put_char
+
+    loop put_string
+  exit:
+    jmp $
+  put_char:
+    ;cx, the char remind 
+    ;ax string length
+    ;should to determine that cursor
+        push ax
+        push bx
+        push cx
+        push dx
+        ;extend segment register
+        push es
+        ;ax is store the cursor position
+        ;call .get_cursor_position
+    ;is carry return  
+    .is_cr:
+        mov ax,[bx]
+        cmp ax,0x0d
+        jnz .is_lf
+        ;计算当前是第几行
+        call get_cursor_position
+
+        mov bl,80
+        div bl
+       
+        ;余数存储在ah, al储存商
+        xor ah,ah
+        mov dl, 0x50
+        mul dl
+        call set_cursor_position
+        jmp .over
+    ;is new line
+    .is_lf:
+        ;一共是25*80=1999个字符
+        cmp ax, 0x0a
+        jnz .put_other_char
+        ;is new line, prepare to have a new line
+        mov bl,80
+        div bl
+        cmp al,24
+        ;向上滚动一行
+        jz .need_roll
+        ;刚好满了，需要换行
+        .next_row:
+            ;回车并换行
+            inc al
+            xor ah,ah
+            mov dl,80
+            mul dl
+            call set_cursor_position
+            jmp .over
+        .need_roll: 
+            call roll_screen
+    .put_other_char:
+        ;ax store the char
+        mov dx,ax
+        mov ax,0xb800
+        mov es,ax
+
+        call get_cursor_position
+        ;ax store the 
+        ;es:ax == es*16+ax
+        mov bx,ax
+        mov byte [es:bx],dl
+        mov byte [es:bx+1],0x07
+    .over:
+        pop es
+        pop dx
+        pop cx
+        pop bx
+        pop ax
+        ret
+    ;ax store the cursor content
+   get_cursor_position:
+        ;push ax
+        push bx
+        push dx
+        mov dx,0x3d4
+        ;0x0e high 8 bit
+        ;0x0f low 8 bit
+        mov al,0x0e
+        out dx,al
+        mov dx,0x3d5
+        in al,dx
+        mov ah,al
+
+        mov dx,0x3d4
+        mov al,0x0f
+        out dx,al
+        mov dx,0x3d5
+        in al,dx
+        pop dx
+        pop bx
+        ;pop ax
+        ret
+   set_cursor_position:
+   ;ax have store the position data
+        push ax
+        push bx
+        push cx
+        push dx
+        mov bx,ax
+
+
+        mov dx,0x3d4
+        mov al,0x0e
+        out dx,al
+        mov dx,0x3d5
+        mov al,bh
+        out dx,al
+
+        mov dx,0x3d4
+        mov al,0x0f
+        out dx,al
+        mov dx, 0x3d5
+        mov al,bl
+        out dx,al
+
+        pop  dx
+        pop  cx
+        pop  bx
+        pop  ax
+        ret
+   roll_screen:
+        ;直接向上滚动一行
+        push ax
+        push bx
+        push cx
+        push dx
+        push ds
+        push es
+        push si
+        push di
+
+        mov ax,0xb800
+        mov ds,ax
+        mov es,ax
+        ;movsw ds:si --> es:di reference df to add si.di
+        cld;set df = 0
+        ;80 个字符，直接覆盖，每一个字符，后面跟随着一个格式控制字符
+        mov si,0xa0
+        mov di,0x00
+        mov cx,1920
+        rep movsw
+        mov bx,3840
+        mov cx,80
+     .cls:
+        mov word[es:bx], 0x0720
+        add bx,2
+        loop .cls
+
+        mov ax,1920
+        call set_cursor_position;
+
+        pop di
+        pop si
+        pop es
+        pop ds
+        pop dx
+        pop cx
+        pop bx
+        pop ax
+        ret
+
+
 SECTION help_code align=16 vstart=0
 
 SECTION main_data align=16 vstart=0
-
+;0x0d \r 0x0d \n 0x0a
+    message: db 'This is the first string for user program'
+             db 0x0d, 0x0a
+             db 'This is the second string for user program'
+             db 0x0d, 0x0a
+             db 'This is the third string for user program Hello World'
+             db 0x0d, 0x0a
+             db 'Just try it try!!!!'
+    message_end:
 SECTION help_data align=16 vstart=0
 
-SECTION stack aliugn=16 vstart=0
+SECTION stack align=16 vstart=0
     resb 256
-     stack_end:
+    stack_end:
 SECTION trail align=16
     program_end:
