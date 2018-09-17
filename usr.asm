@@ -20,21 +20,24 @@ SECTION main_code align=16 vstart=0
     ;user program is to realize print info
     ;if the screen is full, this can scroll the screen info
  start:
-    mov cs, [main_code_seg]
+    ;mov cs, [main_code_seg]
     mov ds, [main_data_seg]
     mov ss, [stack_seg]
     ;have problem?
     mov sp, ss
+    
+    ;初始化屏幕内容
+    mov ax, 0
+    call set_cursor_position
     ;print string that store in main_data
     mov ax, message_end - message
     mov bx, message
     mov cx,ax
+
   put_string:
-    mov ax,cx 
-    add bx,ax
-
+    ;bx 指的是第几个字符
     call put_char
-
+    inc bx
     loop put_string
   exit:
     jmp $
@@ -52,8 +55,8 @@ SECTION main_code align=16 vstart=0
         ;call .get_cursor_position
     ;is carry return  
     .is_cr:
-        mov ax,[bx]
-        cmp ax,0x0d
+        mov al,[bx]
+        cmp al,0x0d
         jnz .is_lf
         ;计算当前是第几行
         call get_cursor_position
@@ -70,37 +73,47 @@ SECTION main_code align=16 vstart=0
     ;is new line
     .is_lf:
         ;一共是25*80=1999个字符
-        cmp ax, 0x0a
+        cmp al, 0x0a
         jnz .put_other_char
         ;is new line, prepare to have a new line
+        call get_cursor_position
         mov bl,80
         div bl
+        mov dx,ax
         cmp al,24
         ;向上滚动一行
         jz .need_roll
         ;刚好满了，需要换行
         .next_row:
-            ;回车并换行
+            ;换行
             inc al
             xor ah,ah
             mov dl,80
             mul dl
+            add al,dh
             call set_cursor_position
             jmp .over
         .need_roll: 
             call roll_screen
     .put_other_char:
         ;ax store the char
-        mov dx,ax
+        mov dl,al
         mov ax,0xb800
         mov es,ax
 
         call get_cursor_position
+
         ;ax store the 
         ;es:ax == es*16+ax
+    
         mov bx,ax
+        shl bx,1
         mov byte [es:bx],dl
         mov byte [es:bx+1],0x07
+        inc ax
+        call set_cursor_position
+        call get_cursor_position
+        
     .over:
         pop es
         pop dx
@@ -205,18 +218,21 @@ SECTION help_code align=16 vstart=0
 
 SECTION main_data align=16 vstart=0
 ;0x0d \r 0x0d \n 0x0a
-    message: db 'This is the first string for user program'
+    message: db 'a',0x0a
+             db 'b'
              db 0x0d, 0x0a
-             db 'This is the second string for user program'
+             db 'c'
+             db 0x0a
+             db '[0DD E'
              db 0x0d, 0x0a
-             db 'This is the third string for user program Hello World'
-             db 0x0d, 0x0a
-             db 'Just try it try!!!!'
+             db 'e'
+             db 0x0d
+             db 'f'
     message_end:
 SECTION help_data align=16 vstart=0
 
 SECTION stack align=16 vstart=0
-    resb 256
+    resb 54
     stack_end:
 SECTION trail align=16
     program_end:

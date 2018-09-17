@@ -78,6 +78,7 @@ SECTION main align=16 vstart=0x7c00
         div bx
         ;init the data segment address
         mov ds,ax
+
         ;now is to change the entry address
         mov ax,[0x06]
         mov dx,[0x08]
@@ -96,6 +97,7 @@ SECTION main align=16 vstart=0x7c00
         loop realloc
         ;这里按理还是需要修改代码段地址
         ;I think this must to set the code segment 
+        ;这里已经修改代码段的地址了
         jmp far [0x04]
         ;load the user program and jmp to the user program
         ;para is two ax is segment address, bx is the program block address
@@ -224,7 +226,7 @@ SECTION main align=16 vstart=0x7c00
         add ax,[cs:app_physical_addr]
         adc dx,[cs:app_physical_addr+0x02]
         
-        ;move the dx low 4 bit to ax high 4 bit
+        ;move the dx low 4 bit to ax high 4 bit ;
         shr ax, 4
         ror dx,4
         and dx,0xf000
