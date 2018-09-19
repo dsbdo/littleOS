@@ -232,7 +232,8 @@ SECTION main_data align=16 vstart=0
 SECTION help_data align=16 vstart=0
 
 SECTION stack align=16 vstart=0
-    resb 54
+    resb 256
     stack_end:
+    db 'helloWorld'
 SECTION trail align=16
     program_end:

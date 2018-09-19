@@ -39,7 +39,6 @@ SECTION main align=16 vstart=0x7c00
         mov dx, [app_physical_addr + 2]
         ;这里要把用户程序头读取出来
         ;mov bx,[app_physical_addr]
-
         mov bx,16
         div bx
         mov es,ax
@@ -64,9 +63,26 @@ SECTION main align=16 vstart=0x7c00
 
         push ds
         mov cx,ax ; loop time
+
+
+        mov ax, [app_physical_addr]
+        mov dx, [app_physical_addr + 2]
+        ;这里要把用户程序头读取出来
+        ;mov bx,[app_physical_addr]
+        mov bx,16
+        div bx
+        mov es,ax
+        mov bx,512
     @2:
         ;那就继续读用户程序就好了嘛，读完之后一直完一个地方填就好了
         ;not finish......
+        ;si have store the block number that want to read
+        ;must es:bx to point the address that to store the user program
+       
+        read_block_from_floppy
+        ;point to the next memory
+        add bx,512
+
         loop @2
         ;ax store the address of the user program address
     direct:
