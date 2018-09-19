@@ -26,7 +26,9 @@ SECTION main_code align=16 vstart=0
     ;have problem?
     mov sp, ss
     
+
     ;初始化屏幕内容
+    call clear
     mov ax, 0
     call set_cursor_position
     ;print string that store in main_data
@@ -40,6 +42,9 @@ SECTION main_code align=16 vstart=0
     inc bx
     loop put_string
   exit:
+    ;换个段执行,我需要跳到其他段去执行
+    mov es,[help_code_seg]
+    jmp far [help_code_seg]:0x0000
     jmp $
   put_char:
     ;cx, the char remind 
@@ -212,10 +217,31 @@ SECTION main_code align=16 vstart=0
         pop bx
         pop ax
         ret
-
-
+  clear:
+    ;将整个屏幕清空,25*80 = 2000
+    push ax
+    push cx
+    push es
+    mov cx,2000
+    mov ax,0xb800
+    mov es,ax
+    @sub_clear:
+        mov ax,cx
+        sub al,1
+        mul 2
+        mov bx,ax
+        mov byte [es:bx],0x00
+        mov byte [es:bx+1],0x00
+        loop @sub_clear
+    pop es
+    pop cx
+    pop ax
+    ret
 SECTION help_code align=16 vstart=0
-
+    help_start:
+        jmp $
+        ;显示当前时间，每一秒跳动一次
+        ;接收键盘输入，在屏幕上打印当前键盘输入内容
 SECTION main_data align=16 vstart=0
 ;0x0d \r 0x0d \n 0x0a
     message: db 'a',0x0a

@@ -73,13 +73,15 @@ SECTION main align=16 vstart=0x7c00
         div bx
         mov es,ax
         mov bx,512
+        mov si,app_start_block
+       
     @2:
         ;那就继续读用户程序就好了嘛，读完之后一直完一个地方填就好了
         ;not finish......
         ;si have store the block number that want to read
         ;must es:bx to point the address that to store the user program
-       
-        read_block_from_floppy
+        add si,1
+        call read_block_from_floppy
         ;point to the next memory
         add bx,512
 
