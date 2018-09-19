@@ -21,6 +21,7 @@ SECTION main_code align=16 vstart=0
     ;if the screen is full, this can scroll the screen info
  start:
     ;mov cs, [main_code_seg]
+    mov es,[help_code_seg]
     mov ds, [main_data_seg]
     mov ss, [stack_seg]
     ;have problem?
@@ -43,8 +44,13 @@ SECTION main_code align=16 vstart=0
     loop put_string
   exit:
     ;换个段执行,我需要跳到其他段去执行
-    mov es,[help_code_seg]
-    jmp far [help_code_seg]:0x0000
+  
+    ;jmp far [help_code_seg]:0x0000
+    ;先压入段地址
+    push word es
+    ;再压入偏移地址
+    push word help_start
+    retf
     jmp $
   put_char:
     ;cx, the char remind 
@@ -228,7 +234,8 @@ SECTION main_code align=16 vstart=0
     @sub_clear:
         mov ax,cx
         sub al,1
-        mul 2
+        shl ax,1
+        ;没有关系的，因为最大只是4000
         mov bx,ax
         mov byte [es:bx],0x00
         mov byte [es:bx+1],0x00
@@ -239,7 +246,161 @@ SECTION main_code align=16 vstart=0
     ret
 SECTION help_code align=16 vstart=0
     help_start:
+        ;call clear
+        ;mov ax,[stack_segment]
+        ;设置堆栈段
+        ;这里处理0x70号中断
+        mov al,0x70
+        mov bl,4
+        mul bl
+        ;计算中断向量表地址
+        mov bx,ax
+
+        cli ;屏蔽中断
+
+        push es
+        mov ax,0x0000
+        mov es,ax
+        mov word[es:bx], new_int_0x70;偏移地址
+        mov word[es:bx+2],cs           ;段地址
+        pop es
+
+
+        ;处理RTC寄存器B
+        mov al,0x0b
+        or al,0x80 ;屏蔽NMI中断
+        out 0x70,al
+        mov al,0x12 ;设置0x0b寄存器，禁止周期性中断，开放更新后中断，BCD码，24小时制
+        out 0x71,al
+
+        ;设置RTC寄存器C，复位未决的中断状态
+        mov al,0x0c
+        out 0x70,al
+        in al,0x71
+
+        ;读取8259芯片的IMR寄存器, 清除bit 0 位
+        in al,0xa1
+        and al,0xfe
+        out 0xa1,al ;写回寄存器
+
+        ;开中断
+        sti
+
+        push es
+        mov ax,0xb800
+        mov es,ax
+        mov byte [es:12*160 + 33*2],'@'       ;屏幕第12行，35列
+        pop es
+    idle:
+        hlt
+        mov ax,0xb800
+        mov es,ax
+        not byte [es:12*160 + 33*2+1]         ;反转显示属性 
+        jmp idle
+
+
+
         jmp $
+    disp_time:
+        push ax
+        push bx
+        push cx
+        push dx
+        push es
+        
+            ;阻断NMI
+        .waits:
+            mov al,0x0a ;表示准备读取0x0a寄存器
+            or al,0x80 ;用以阻断NMI，为1时阻断
+            out 0x70,al
+            in al,0x71
+            test al,0x80 ;对二者进行与操作，如果第七位是1的话，证明时间在更新，需要等待
+            jnz .waits
+
+            xor al,al
+            or al,0x80 ;读取秒，之所以0x80,是为了关闭NMI
+            out 0x70,al
+            in al,0x71
+            push ax
+
+            ;读取分钟
+            mov al,0x02
+            or al,0x80
+            out 0x70,al
+            in al,0x71
+            push ax
+
+            ;读取小时
+            mov al,0x04
+            or al,0x80
+            out 0x70,al
+            in al,0x71
+            push ax
+
+            ;读取寄存器0x0c,开放NMI
+            mov al,0x0c
+            out 0x70,al
+            in al,0x71
+
+            mov ax,0xb800
+            mov es,ax
+
+            pop ax
+            call bcd_2_ascii
+            ;12行36列开始显示
+            mov bx,12*160 + 36*2
+
+            mov [es:bx],ah
+            mov byte [es:bx+1], 0x07
+            mov [es:bx+2],al
+            mov byte [es:bx+3],0x07
+            mov al,':'
+            mov [es:bx+4],al
+            mov byte [es:bx+5],0x07
+            not byte [es:bx+5]                 ;反转显示属性 
+
+            pop ax
+            call bcd_2_ascii
+            mov [es:bx+6],ah
+            mov byte [es:bx+7],0x07
+            mov [es:bx+8],al
+            mov byte [es:bx+9],0x07
+
+            mov al,':'
+            mov [es:bx+10],al                  ;显示分隔符':'
+            mov byte [es:bx+11],0x07
+            not byte [es:bx+11]                ;反转显示属性
+
+            pop ax
+            call bcd_2_ascii
+            mov [es:bx+12],ah
+            mov [es:bx+14],al    
+
+            ;中断结束命令EOI
+            mov al,0x20
+            out 0xa0,al ;向slave片发送
+            out 0x20,al ;向master片发送
+
+
+        pop es
+        pop dx
+        pop cx
+        pop bx
+        pop ax
+        iret
+    disp_keyboard_input:
+        ret
+    bcd_2_ascii:
+        ;使用四位表示一个十进制
+        mov ah,al
+        and al,0x0f ;仅保留低四位
+        add al,0x30 ;转换为ascii码
+
+        shr ah,4
+        and ah,0x0f
+        add ah,0x30
+        ret
+        
         ;显示当前时间，每一秒跳动一次
         ;接收键盘输入，在屏幕上打印当前键盘输入内容
 SECTION main_data align=16 vstart=0
