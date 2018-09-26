@@ -261,10 +261,18 @@ SECTION help_code align=16 vstart=0
         push es
         mov ax,0x0000
         mov es,ax
-        mov word[es:bx], new_int_0x70;偏移地址
+        mov word[es:bx], disp_time;偏移地址
         mov word[es:bx+2],cs           ;段地址
         pop es
 
+
+        ;处理RTC寄存器A
+        mov al,0x0a
+        or  al,0x80
+        out 0x70,al
+        in al,0x71
+        or al,0x0f ;每秒两次中断
+        out 0x71,al
 
         ;处理RTC寄存器B
         mov al,0x0b
@@ -283,6 +291,13 @@ SECTION help_code align=16 vstart=0
         and al,0xfe
         out 0xa1,al ;写回寄存器
 
+        ;关闭所有中断，仅留下来自键盘的中断
+        ;mov al,0xfd
+        ;out 0x20,al ;仅留下键盘中断
+        ;in al,0x20
+        ;mov al,0xff ;从片上的中断全部阻断
+        ;out 0xa0,
+
         ;开中断
         sti
 
@@ -291,15 +306,21 @@ SECTION help_code align=16 vstart=0
         mov es,ax
         mov byte [es:12*160 + 33*2],'@'       ;屏幕第12行，35列
         pop es
+        xor bx,bx
+        mov bx,11*160 + 33*2
+        .reps:
+            mov ah,0x00
+            int 0x16
+            mov ah,0x0e
+            mov bl,0x07
+            int 0x10
+            jmp .reps
     idle:
         hlt
         mov ax,0xb800
         mov es,ax
         not byte [es:12*160 + 33*2+1]         ;反转显示属性 
         jmp idle
-
-
-
         jmp $
     disp_time:
         push ax
@@ -308,7 +329,7 @@ SECTION help_code align=16 vstart=0
         push dx
         push es
         
-            ;阻断NMI
+        ;阻断NMI
         .waits:
             mov al,0x0a ;表示准备读取0x0a寄存器
             or al,0x80 ;用以阻断NMI，为1时阻断
@@ -374,7 +395,9 @@ SECTION help_code align=16 vstart=0
             pop ax
             call bcd_2_ascii
             mov [es:bx+12],ah
-            mov [es:bx+14],al    
+            mov byte [es:bx+13],0x07
+            mov [es:bx+14],al  
+            mov byte [es:bx+15],0x07  
 
             ;中断结束命令EOI
             mov al,0x20
@@ -389,7 +412,11 @@ SECTION help_code align=16 vstart=0
         pop ax
         iret
     disp_keyboard_input:
-        ret
+        ;push ax
+        ;mov ax,0xb800
+        ;mov es,ax
+        ;mov byte 
+        iret
     bcd_2_ascii:
         ;使用四位表示一个十进制
         mov ah,al

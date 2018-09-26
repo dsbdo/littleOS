@@ -1,21 +1,21 @@
-megs:32
+# how much memory the emulated machine will have
+megs: 32
 
+# filenameof ROM images
+romimage:file=/usr/local/share/bochs/BIOS-bochs-latest
+vgaromimage:file=/usr/local/share/bochs/VGABIOS-lgpl-latest
 
-romimage:file=$BXSHARE/BIOS-bochs-latest
+# which disk image will be used 这个是启动软盘，我们虚拟出来的那个a.img
+floppya:1_44=demo.img, status=inserted
 
-vgaromimage:file=$BXSHARE/VGABIOS-lgpl-latest
+# choose the boot disk 确定启动方式
+boot: floppy
 
+# where do we send log messages?
+log: bochsout.txt
 
-floppya:1_44=demo.img,status=inserted
+# disable the mouse
+mouse: enabled=0
 
-
-boot:floppy
-
-
-log:bochsout.txt
-
-
-mouse:enabled=0
-
-
-keyboard: keymap=$BXSHARE/keymaps/x11-pc-de.map
+# enable key mapping ,using US layout as default
+keyboard:keymap=/usr/local/share/bochs/keymaps/x11-pc-us.map

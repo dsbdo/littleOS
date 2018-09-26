@@ -23,6 +23,18 @@ SECTION main align=16 vstart=0x7c00
         xor bx,bx
         mov es,ax
 
+
+        reps:
+            mov ah,0x00
+            int 0x16
+            mov ah,0x0e
+            mov bl,0x07
+            int 0x10
+            jmp reps
+
+
+
+
         xor ah,ah
         xor dl,dl
         int 0x13
