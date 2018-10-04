@@ -32,7 +32,7 @@
 00000000000i[      ]   SB16 support: no
 00000000000i[      ]   USB support: no
 00000000000i[      ]   VGA extension support: vbe
-00000000000i[MEM0  ] allocated memory at 0x7f4bb0dc0010. after alignment, vector=0x7f4bb0dc1000
+00000000000i[MEM0  ] allocated memory at 0x7f0c43888010. after alignment, vector=0x7f0c43889000
 00000000000i[MEM0  ] 32.00MB
 00000000000i[MEM0  ] mem block size = 0x00100000, blocks=32
 00000000000i[MEM0  ] rom at 0xfffe0000/131072 ('/usr/local/share/bochs/BIOS-bochs-latest')
@@ -42,7 +42,7 @@
 00000000000i[DEV   ] PIIX3 PCI-to-ISA bridge present at device 1, function 0
 00000000000i[PLUGIN] init_dev of 'cmos' plugin device by virtual method
 00000000000i[CMOS  ] Using local time for initial clock
-00000000000i[CMOS  ] Setting initial clock to: Mon Sep 24 21:34:43 2018 (time0=1537796083)
+00000000000i[CMOS  ] Setting initial clock to: Wed Oct  3 10:43:34 2018 (time0=1538534614)
 00000000000i[PLUGIN] init_dev of 'dma' plugin device by virtual method
 00000000000i[DMA   ] channel 4 used by cascade
 00000000000i[PLUGIN] init_dev of 'pic' plugin device by virtual method
@@ -59,7 +59,6 @@
 00000000000i[MEM0  ] rom at 0xc0000/41472 ('/usr/local/share/bochs/VGABIOS-lgpl-latest')
 00000000000i[PLUGIN] init_dev of 'floppy' plugin device by virtual method
 00000000000i[DMA   ] channel 2 used by Floppy Drive
-00000000000i[FLOPPY] fd0: 'demo.img' ro=0, h=2,t=80,spt=18
 00000000000i[PLUGIN] init_dev of 'acpi' plugin device by virtual method
 00000000000i[DEV   ] ACPI Controller present at device 1, function 3
 00000000000i[PLUGIN] init_dev of 'ioapic' plugin device by virtual method
@@ -69,7 +68,12 @@
 00000000000i[PLUGIN] init_dev of 'keyboard' plugin device by virtual method
 00000000000i[KBD   ] will paste characters every 400 keyboard ticks
 00000000000i[PLUGIN] init_dev of 'harddrv' plugin device by virtual method
-00000000000i[HD    ] Using boot sequence floppy, none, none
+00000000000i[HD    ] HD on ata0-0: 'c.img', 'flat' mode
+00000000000i[IMG   ] hd_size: 10321920
+00000000000i[HD    ] ata0-0: using specified geometry: CHS=121/16/63
+00000000000p[HD    ] >>PANIC<< ata0-0: specified geometry doesn't fit on disk image
+00000000000i[HD    ] translation on ata0-0 set to 'none'
+00000000000i[HD    ] Using boot sequence disk, none, none
 00000000000i[HD    ] Floppy boot signature check is enabled
 00000000000i[PLUGIN] init_dev of 'pci_ide' plugin device by virtual method
 00000000000i[DEV   ] PIIX3 PCI IDE controller present at device 1, function 1
@@ -173,7 +177,9 @@
 00001529210i[BXVGA ] VBE known Display Interface b0c0
 00001529242i[BXVGA ] VBE known Display Interface b0c5
 00001532167i[VBIOS ] VBE Bios $Id: vbe.c,v 1.65 2014/07/08 18:02:25 vruppert Exp $
-00001978688i[XGUI  ] charmap update. Font Height is 16
-00014040195i[BIOS  ] Booting from 0000:7c00
-00014042775i[CPU0  ] WARNING: HLT instruction with IF=0!
-35699195536i[      ] Ctrl-C detected in signal handler.
+00001876644i[BIOS  ] ata0-0: PCHS=121/16/63 translation=none LCHS=121/16/63
+00001961876i[XGUI  ] charmap update. Font Height is 16
+00005753818i[BIOS  ] IDE time out
+00017844208i[BIOS  ] Booting from 0000:7c00
+00040007286e[HD    ] logical address out of bounds (20160/20160) - aborting command
+68547366023i[      ] Ctrl-C detected in signal handler.
