@@ -23,6 +23,17 @@ SECTION main align=16 vstart=0x7c00
         xor bx,bx
         mov es,ax
 
+    keyboard_int:
+        mov ah,0x00
+        int 0x16
+        ;返回时，字符在al中
+        mov ah,0x0e
+
+        mov bl,0x07
+        int 0x10
+        jmp keyboard_int
+
+        
         xor ah,ah
         xor dl,dl
         int 0x13

@@ -261,7 +261,7 @@ SECTION help_code align=16 vstart=0
         push es
         mov ax,0x0000
         mov es,ax
-        mov word[es:bx], new_int_0x70;偏移地址
+        mov word[es:bx], disp_time;偏移地址
         mov word[es:bx+2],cs           ;段地址
         pop es
 
@@ -273,19 +273,34 @@ SECTION help_code align=16 vstart=0
         mov al,0x12 ;设置0x0b寄存器，禁止周期性中断，开放更新后中断，BCD码，24小时制
         out 0x71,al
 
-        ;设置RTC寄存器C，复位未决的中断状态
+        ;设置RTC寄存器C，复位未决的中断状态，0x70RTC索引寄存器号,0x71数据端口号
         mov al,0x0c
         out 0x70,al
         in al,0x71
 
-        ;读取8259芯片的IMR寄存器, 清除bit 0 位
+        ;读取8259芯片的IMR寄存器, 清除bit 0 位,允许从片IR0中断
         in al,0xa1
         and al,0xfe
         out 0xa1,al ;写回寄存器
+        ;这里暂时处理一下键盘中断问题
+        ;IRQ1 中断号是33
+        ;注册键盘中断
+        mov al,33
+        mov bl,4
+        mul bl
+        ;计算中断向量表地址
+        mov bx,ax
+        mov ax,0x0000
+        mov es,ax
+        ;mov word[es:bx], disp_keyboard_input;偏移地址
+        ;mov word[es:bx+2],cs           ;段地址
+        ;中断服务程序注册结束
+
 
         ;开中断
         sti
 
+        
         push es
         mov ax,0xb800
         mov es,ax
@@ -389,7 +404,20 @@ SECTION help_code align=16 vstart=0
         pop ax
         iret
     disp_keyboard_input:
-        ret
+        push ax
+        push bx
+        push es
+        mov ax,0xb800
+        mov es,ax
+        mov bx,11*160+33*2
+        mov byte [es:bx], al
+        mov byte [es:bx+1], 0x07
+        pop es
+        pop bx
+        pop ax
+        iret
+
+
     bcd_2_ascii:
         ;使用四位表示一个十进制
         mov ah,al

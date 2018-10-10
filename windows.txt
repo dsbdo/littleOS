@@ -1,0 +1,7 @@
+nasm -f bin usr.asm -o usr.bin
+nasm -f bin load.asm -o load.bin
+
+.\windows\dd.exe if=load.bin of=a.img seek=0 bs=512 count=1 conv=notrunc
+.\windows\dd.exe if=usr.bin of=a.img seek=1 bs=512 count=2 conv=notrunc
+
+bochsdbg.exe -f bochsrc.txt 
