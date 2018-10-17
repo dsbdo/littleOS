@@ -30,7 +30,7 @@ SECTION mbr vstart=0x00
 
         ;安装mbr只执行代码段
         mov eax, 0x00007c00
-        mov ebx, 0x000000ff
+        mov ebx, 0x000001ff
         mov ecx, DA_CODE_E
         or ecx, DA_BYTE_32bit
         call MakeGDT
@@ -86,7 +86,13 @@ SECTION mbr vstart=0x00
     mov byte [0x02], 'e'  
     mov byte [0x04], 'l'  
     mov byte [0x06], 'l'
-
+    mov byte [0x08], 'o'  
+    mov byte [0x0a], ' '  
+    mov byte [0x0c], 'W'  
+    mov byte [0x0e], 'o'
+    mov byte [0x10], 'r'  
+    mov byte [0x12], 'l'  
+    mov byte [0x14], 'd' 
     jmp $
 
 [bits 16]
