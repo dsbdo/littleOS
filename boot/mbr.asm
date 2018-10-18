@@ -10,6 +10,12 @@ SECTION mbr vstart=0x00
         mov sp, 0x7c00
         ;初始化堆栈之后，计算GDT，安装GDT描述
         ;安装描述符
+        mov ax, 0x00
+        mov ds,ax
+        mov ax, 0x02
+        mov bx,0x7c00+0x0200
+        call ReadHardDisk
+
         mov edi, [Pgdt+2+0x7c00]
         ;安装空描述符
         mov eax, 0x00
@@ -55,6 +61,25 @@ SECTION mbr vstart=0x00
         mov [edi+GDT_VIDEO_DESC_INDEX], ebx
         mov [edi+GDT_VIDEO_DESC_INDEX+0x04], eax
 
+        ;安装一个Normal描述符，用以从32位保护模式跳转返回16位实模式
+        mov eax, 0x00000000
+        mov ebx, 0x0000ffff
+        mov ecx, DA_DATA_RW
+        or ecx, DA_BYTE_32bit
+        call MakeGDT
+        mov [edi+GDT_NORMAL_DESC_INDEX], ebx
+        mov [edi+GDT_NORMAL_DESC_INDEX+0x04], eax
+
+        ;安装另外一个16位段的描述符，用以实现从32位跳回16位实模式下的尝试
+        mov eax, section.16code.start
+        mov ebx, 0xffff
+        mov ecx, DA_CODE_E
+        or ecx,DA_BYTE_32bit
+        call MakeGDT
+        mov [edi+GDT_16CODE_DESC_INDEX], ebx
+        mov [edi+GDT_16CODE_DESC_INDEX + 0x04], eax
+
+
         ;忘记在这里更新大小了
         mov word[cs:Pgdt+0x7c00],39
         ;关中断，进入32位保护模式
@@ -93,7 +118,9 @@ SECTION mbr vstart=0x00
     mov byte [0x10], 'r'  
     mov byte [0x12], 'l'  
     mov byte [0x14], 'd' 
-    jmp $
+    jmp GDT_16CODE_DESC_INDEX:0x00
+
+
 
 [bits 16]
     MakeGDT:
@@ -117,12 +144,107 @@ SECTION mbr vstart=0x00
         mov ebx,edx
         ret
     ;------------------------
+    ;逻辑扇区，读取后的存放地址
+    ;AX 扇区号
+    ;DS:BX目标缓冲区地址
+
     ReadHardDisk:
+        push ax
+        push bx
+        push cx
+        push dx
+
+        push ax
+        ;读取一个扇区
+        mov dx,0x1f2
+        mov al,1
+        out dx, al
+        ;下面指明扇区地址
+        inc dx
+        pop ax
+        out dx,al
+
+        inc dx
+        mov cl,8
+        shr ax,cl
+        out dx,al
+
+        ;目前是16位读盘，所以剩下的都是零
+        mov al, 0x00
+        inc dx
+        out dx,al
+
+        inc dx
+        or al,0xe0
+        out dx,al
+
+        inc dx
+        mov al,0x20
+        out dx,al
+
+        .waits:
+            in al,dx
+            and al,0x88
+            cmp al, 0x08
+            jnz .waits
+
+            mov cx, 256
+            mov dx, 0x1f0
+        .readw:
+            in ax, dx
+            mov [bx],ax
+            add bx,2
+            loop .readw
+        pop dx
+        pop cx
+        pop bx
+        pop ax
         ret
     ;
 Pgdt    dw 0x00
         dd 0x00007e00 ;gdt起始地址
 ;----------------------------
+
+[bits 16]
+SECTION 16code vstart=0x00
+    ;刷新高速缓冲寄存器
+    mov ax, GDT_NORMAL_DESC_INDEX
+	mov	ds, ax
+	mov	es, ax
+	mov	fs, ax
+	mov	gs, ax
+	mov	ss, ax
+
+    ;关闭PE位， 进入实模式
+    mov eax,cr0
+    and eax,0xfffffffe
+    mov cr0, eax
+    ;现在是16位实模式，因为cs现在还是 0x30, cs:offset
+    ;应该接下来是继续向下取址执行
+    jmp 0:FlushCS+0x7c00
+    FlushCS:
+        ;这里是关闭A20 地址线
+        mov	ax, cs
+	    mov	ds, ax
+	    mov	es, ax
+	    mov	ss, ax
+        ;关闭A20地址线
+        in al,0x92
+        and al, 0xfd
+        out 0x92, al
+
+
+        sti
+        mov ax, 0xb800
+        mov ds, ax
+        mov byte[0x00],'R'
+        mov byte[0x02],'E'
+        mov byte[0x04],'A'
+        mov byte[0x06],'L'
+        jmp $
+
+
+
 times 510-($-$$) db 0
                  db 0x55, 0xaa
 

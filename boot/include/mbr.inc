@@ -14,6 +14,8 @@ GDT_DATA_4G_DESC_INDEX equ 0x0008
 GDT_MBR_DESC_INDEX     equ 0x0010
 GDT_STACK_DESC_INDEX   equ 0x0018
 GDT_VIDEO_DESC_INDEX   equ 0x0020
+GDT_NORMAL_DESC_INDEX equ 0x0028
+GDT_16CODE_DESC_INDEX equ 0x0030
 ;描述符类型常量描述 TYPE 四位
 ;描述符P DPL S位常量
 ; S 位 0 表示系统段（调用门，中断门）， 1 表示存储段（数据段或者代码段），不是很明白这里的系统段与存储段的区别
